@@ -383,6 +383,8 @@ Http2Stream::initiating_close()
     // Set the state of the connection to closed
     // TODO - these states should be combined
     closed = true;
+    // Stream state should be changed by transmission of frames only
+    ink_assert(_state == Http2StreamState::HTTP2_STREAM_STATE_CLOSED);
     _state = Http2StreamState::HTTP2_STREAM_STATE_CLOSED;
 
     // leaving the reference to the SM, so we can detach from the SM when we actually destroy
