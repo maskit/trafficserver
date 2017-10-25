@@ -122,6 +122,7 @@ extern "C" int plock(int);
 static const long MAX_LOGIN = ink_login_name_max();
 
 static void *mgmt_restart_shutdown_callback(void *, char *, int data_len);
+static void *mgmt_drain_callback(void *, char *, int data_len);
 static void *mgmt_storage_device_cmd_callback(void *x, char *data, int len);
 static void *mgmt_lifecycle_msg_callback(void *x, char *data, int len);
 static void init_ssl_ctx_callback(void *ctx, bool server);
@@ -278,7 +279,7 @@ public:
 
       RecInt timeout = 0;
       if (RecGetRecordInt("proxy.config.stop.shutdown_timeout", &timeout) == REC_ERR_OKAY && timeout) {
-        http_client_session_draining = true;
+        RecSetRecordInt("proxy.node.config.draining", 1, REC_SOURCE_DEFAULT);
         if (!remote_management_flag) {
           // Close listening sockets here only if TS is running standalone
           RecInt close_sockets = 0;
@@ -1931,6 +1932,7 @@ main(int /* argc ATS_UNUSED */, const char **argv)
 
     pmgmt->registerMgmtCallback(MGMT_EVENT_SHUTDOWN, mgmt_restart_shutdown_callback, nullptr);
     pmgmt->registerMgmtCallback(MGMT_EVENT_RESTART, mgmt_restart_shutdown_callback, nullptr);
+    pmgmt->registerMgmtCallback(MGMT_EVENT_DRAIN, mgmt_drain_callback, nullptr);
 
     // Callback for various storage commands. These all go to the same function so we
     // pass the event code along so it can do the right thing. We cast that to <int> first
@@ -1986,6 +1988,13 @@ static void *
 mgmt_restart_shutdown_callback(void *, char *, int /* data_len ATS_UNUSED */)
 {
   sync_cache_dir_on_shutdown();
+  return nullptr;
+}
+
+static void *
+mgmt_drain_callback(void *, char *, int /* data_len ATS_UNUSED */)
+{
+  RecSetRecordInt("proxy.node.config.draining", 1, REC_SOURCE_DEFAULT);
   return nullptr;
 }
 

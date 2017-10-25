@@ -99,6 +99,14 @@ LocalManager::processBounce()
 }
 
 void
+LocalManager::processDrain()
+{
+  mgmt_log("[LocalManager::processDrain] Executing process drain request.\n");
+  signalEvent(MGMT_EVENT_DRAIN, "processDrain");
+  return;
+}
+
+void
 LocalManager::rollLogFiles()
 {
   mgmt_log("[LocalManager::rollLogFiles] Log files are being rolled.\n");

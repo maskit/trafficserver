@@ -328,6 +328,11 @@ typedef enum {
   TS_RESTART_OPT_DRAIN = 0x02, /* Wait for traffic to drain before restarting. */
 } TSRestartOptionT;
 
+typedef enum {
+  TS_STOP_OPT_NONE = 0x0,
+  TS_STOP_OPT_DRAIN, /* Wait for traffic to drain before stopping. */
+} TSStopOptionT;
+
 /***************************************************************************
  * Structures
  ***************************************************************************/
@@ -828,6 +833,12 @@ tsapi TSMgmtError TSActionDo(TSActionNeedT action);
  * Output TSMgmtError
  */
 tsapi TSMgmtError TSBounce(unsigned options);
+
+/* TSStop: stop the traffic_server process(es).
+ * Input: options - bitmask of TSRestartOptionT
+ * Output TSMgmtError
+ */
+tsapi TSMgmtError TSStop(unsigned options);
 
 /* TSStorageDeviceCmdOffline: Request to make a cache storage device offline.
  * @arg dev Target device, specified by path to device.

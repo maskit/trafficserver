@@ -115,16 +115,23 @@ static int
 server_stop(unsigned argc, const char **argv)
 {
   TSMgmtError error;
+  const char *usage = "server stop [OPTIONS]";
+  unsigned flags    = TS_RESTART_OPT_NONE;
 
-  // I am not sure whether it really makes sense to add the --drain option here.
-  // TSProxyStateSet() is a synchronous API, returning only after the proxy has
-  // been shut down. However, draining can take a long time and we don't want
-  // to wait for it. Maybe the right approach is to make the stop async.
-  if (!CtrlProcessArguments(argc, argv, nullptr, 0) || n_file_arguments != 0) {
-    return CtrlCommandUsage("server stop");
+  const ArgumentDescription opts[] = {
+    {"drain", '-', "Wait for client connections to drain before stopping", "F", &drain, nullptr, nullptr},
+  };
+
+  if (!CtrlProcessArguments(argc, argv, opts, countof(opts)) || n_file_arguments != 0) {
+    return CtrlCommandUsage(usage, opts, countof(opts));
   }
 
-  error = TSProxyStateSet(TS_PROXY_OFF, TS_CACHE_CLEAR_NONE);
+  if (drain) {
+    flags |= TS_STOP_OPT_DRAIN;
+  }
+
+  error = TSStop(flags);
+
   if (error != TS_ERR_OKAY) {
     CtrlMgmtError(error, "server stop failed");
     return CTRL_EX_ERROR;

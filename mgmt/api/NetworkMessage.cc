@@ -192,6 +192,7 @@ send_mgmt_error(int fd, OpType optype, TSMgmtError error)
   // Switch on operations, grouped by response format.
   switch (optype) {
   case OpType::BOUNCE:
+  case OpType::STOP:
   case OpType::EVENT_RESOLVE:
   case OpType::LIFECYCLE_MESSAGE:
   case OpType::PROXY_STATE_SET:

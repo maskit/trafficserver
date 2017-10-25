@@ -1674,6 +1674,12 @@ TSBounce(unsigned options)
 }
 
 tsapi TSMgmtError
+TSStop(unsigned options)
+{
+  return Stop(options);
+}
+
+tsapi TSMgmtError
 TSStorageDeviceCmdOffline(const char *dev)
 {
   return StorageDeviceCmdOffline(dev);

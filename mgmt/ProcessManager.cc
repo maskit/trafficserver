@@ -381,6 +381,9 @@ ProcessManager::handleMgmtMsgFromLM(MgmtMessageHdr *mh)
   case MGMT_EVENT_RESTART:
     signalMgmtEntity(MGMT_EVENT_RESTART);
     break;
+  case MGMT_EVENT_DRAIN:
+    signalMgmtEntity(MGMT_EVENT_DRAIN);
+    break;
   case MGMT_EVENT_CLEAR_STATS:
     signalMgmtEntity(MGMT_EVENT_CLEAR_STATS);
     break;
