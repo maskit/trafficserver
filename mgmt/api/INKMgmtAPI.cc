@@ -1680,6 +1680,12 @@ TSStop(unsigned options)
 }
 
 tsapi TSMgmtError
+TSDrain(unsigned options)
+{
+  return Drain(options);
+}
+
+tsapi TSMgmtError
 TSStorageDeviceCmdOffline(const char *dev)
 {
   return StorageDeviceCmdOffline(dev);

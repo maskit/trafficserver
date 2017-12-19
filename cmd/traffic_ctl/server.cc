@@ -169,16 +169,49 @@ server_start(unsigned argc, const char **argv)
   return CTRL_EX_OK;
 }
 
+static int
+server_drain(unsigned argc, const char **argv)
+{
+  TSMgmtError error;
+  const char *usage = "server drain [OPTIONS]";
+
+  int no_new_connection            = 0;
+  int undo                         = 0;
+  const ArgumentDescription opts[] = {
+    {"no-new-connection", 'N', "Wait for new connections down to threshold before starting draining", "F", &no_new_connection,
+     nullptr, nullptr},
+    {"undo", 'U', "Recover server from the drain mode", "F", &undo, nullptr, nullptr},
+  };
+
+  if (!CtrlProcessArguments(argc, argv, opts, countof(opts)) || n_file_arguments != 0) {
+    return CtrlCommandUsage(usage, opts, countof(opts));
+  }
+
+  if (undo) {
+    error = TSDrain(TS_DRAIN_OPT_UNDO);
+  } else if (no_new_connection) {
+    error = TSDrain(TS_DRAIN_OPT_IDLE);
+  } else {
+    error = TSDrain(TS_DRAIN_OPT_NONE);
+  }
+
+  if (error != TS_ERR_OKAY) {
+    CtrlMgmtError(error, "server drain failed");
+    return CTRL_EX_ERROR;
+  }
+
+  return CTRL_EX_OK;
+}
+
 int
 subcommand_server(unsigned argc, const char **argv)
 {
-  const subcommand commands[] = {
-    {server_backtrace, "backtrace", "Show a full stack trace of the traffic_server process"},
-    {server_restart, "restart", "Restart Traffic Server"},
-    {server_start, "start", "Start the proxy"},
-    {server_status, "status", "Show the proxy status"},
-    {server_stop, "stop", "Stop the proxy"},
-  };
+  const subcommand commands[] = {{server_backtrace, "backtrace", "Show a full stack trace of the traffic_server process"},
+                                 {server_restart, "restart", "Restart Traffic Server"},
+                                 {server_start, "start", "Start the proxy"},
+                                 {server_status, "status", "Show the proxy status"},
+                                 {server_stop, "stop", "Stop the proxy"},
+                                 {server_drain, "drain", "Drain the requests"}};
 
   return CtrlGenericSubcommand("server", commands, countof(commands), argc, argv);
 }

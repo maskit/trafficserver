@@ -431,8 +431,32 @@ TSMgmtError
 Stop(unsigned options)
 {
   lmgmt->mgmt_shutdown_triggered_at = time(nullptr);
-  lmgmt->mgmt_shutdown_outstanding = (options & TS_STOP_OPT_DRAIN) ? MGMT_PENDING_IDLE_STOP : MGMT_PENDING_STOP;
+  lmgmt->mgmt_shutdown_outstanding  = (options & TS_STOP_OPT_DRAIN) ? MGMT_PENDING_IDLE_STOP : MGMT_PENDING_STOP;
 
+  return TS_ERR_OKAY;
+}
+
+/*-------------------------------------------------------------------------
+ * Drain
+ *-------------------------------------------------------------------------
+ * Drain requests of traffic_server
+ */
+TSMgmtError
+Drain(unsigned options)
+{
+  switch (options) {
+  case TS_DRAIN_OPT_NONE:
+    lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_DRAIN;
+    break;
+  case TS_DRAIN_OPT_IDLE:
+    lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_IDLE_DRAIN;
+    break;
+  case TS_DRAIN_OPT_UNDO:
+    lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_UNDO_DRAIN;
+    break;
+  default:
+    ink_release_assert(!"Not expected to reach here");
+  }
   return TS_ERR_OKAY;
 }
 

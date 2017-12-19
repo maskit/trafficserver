@@ -167,6 +167,18 @@ is_server_idle()
 }
 
 static bool
+is_server_idle_from_new_connection()
+{
+  RecInt active    = 0;
+  RecInt threshold = 0;
+  // TODO implement with the right metric
+
+  Debug("lm", "%" PRId64 " active clients, threshold is %" PRId64, active, threshold);
+
+  return active <= threshold;
+}
+
+static bool
 is_server_draining()
 {
   RecInt draining = 0;
@@ -783,6 +795,23 @@ main(int argc, const char **argv)
         lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_NONE;
       }
       break;
+    case MGMT_PENDING_DRAIN:
+      if (!is_server_draining()) {
+        lmgmt->processDrain();
+      }
+      lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_NONE;
+      break;
+    case MGMT_PENDING_IDLE_DRAIN:
+      if (is_server_idle_from_new_connection()) {
+        lmgmt->processDrain();
+        lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_NONE;
+      }
+      break;
+    case MGMT_PENDING_UNDO_DRAIN:
+      if (is_server_draining()) {
+        lmgmt->processDrain(0);
+        lmgmt->mgmt_shutdown_outstanding = MGMT_PENDING_NONE;
+      }
     default:
       break;
     }

@@ -450,6 +450,23 @@ Stop(unsigned options)
 }
 
 /*-------------------------------------------------------------------------
+ * Drain
+ *-------------------------------------------------------------------------
+ * Drain requests of the traffic_server process(es) only.
+ */
+TSMgmtError
+Drain(unsigned options)
+{
+  TSMgmtError ret;
+  OpType optype        = OpType::DRAIN;
+  MgmtMarshallInt oval = options;
+
+  ret = MGMTAPI_SEND_MESSAGE(main_socket_fd, OpType::DRAIN, &optype, &oval);
+
+  return (ret == TS_ERR_OKAY) ? parse_generic_response(OpType::DRAIN, main_socket_fd) : ret;
+}
+
+/*-------------------------------------------------------------------------
  * StorageDeviceCmdOffline
  *-------------------------------------------------------------------------
  * Disable a storage device.

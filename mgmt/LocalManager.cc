@@ -99,10 +99,10 @@ LocalManager::processBounce()
 }
 
 void
-LocalManager::processDrain()
+LocalManager::processDrain(int to_drain)
 {
   mgmt_log("[LocalManager::processDrain] Executing process drain request.\n");
-  signalEvent(MGMT_EVENT_DRAIN, "processDrain");
+  signalEvent(MGMT_EVENT_DRAIN, to_drain ? "1" : "0");
   return;
 }
 

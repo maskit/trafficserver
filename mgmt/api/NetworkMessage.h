@@ -42,6 +42,7 @@ enum class OpType : MgmtMarshallInt {
   RESTART,
   BOUNCE,
   STOP,
+  DRAIN,
   EVENT_RESOLVE,
   EVENT_GET_MLT,
   EVENT_ACTIVE,

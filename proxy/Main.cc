@@ -1992,9 +1992,10 @@ mgmt_restart_shutdown_callback(void *, char *, int /* data_len ATS_UNUSED */)
 }
 
 static void *
-mgmt_drain_callback(void *, char *, int /* data_len ATS_UNUSED */)
+mgmt_drain_callback(void *, char *arg, int len)
 {
-  RecSetRecordInt("proxy.node.config.draining", 1, REC_SOURCE_DEFAULT);
+  ink_assert(len > 1 && (arg[0] == '0' || arg[0] == '1'));
+  RecSetRecordInt("proxy.node.config.draining", arg[0] == '1', REC_SOURCE_DEFAULT);
   return nullptr;
 }
 
