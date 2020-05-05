@@ -91,10 +91,6 @@ static constexpr char SSL_CERT_SEPARATE_DELIM = ',';
 
 SSLSessionCache *session_cache; // declared extern in P_SSLConfig.h
 
-#if TS_HAVE_OPENSSL_SESSION_TICKETS
-static int ssl_session_ticket_index = -1;
-#endif
-
 static int ssl_vc_index = -1;
 
 static ink_mutex *mutex_buf      = nullptr;
@@ -173,14 +169,6 @@ SSL_CTX_add_extra_chain_cert_file(SSL_CTX *ctx, const char *chainfile)
   return SSL_CTX_add_extra_chain_cert_bio(ctx, bio);
 }
 
-static bool
-ssl_session_timed_out(SSL_SESSION *session)
-{
-  return SSL_SESSION_get_timeout(session) < (time(nullptr) - SSL_SESSION_get_time(session));
-}
-
-static void ssl_rm_cached_session(SSL_CTX *ctx, SSL_SESSION *sess);
-
 static SSL_SESSION *
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 ssl_get_cached_session(SSL *ssl, unsigned char *id, int len, int *copy)
@@ -188,46 +176,14 @@ ssl_get_cached_session(SSL *ssl, unsigned char *id, int len, int *copy)
 ssl_get_cached_session(SSL *ssl, const unsigned char *id, int len, int *copy)
 #endif
 {
-  SSLSessionID sid(id, len);
+  TLSSessionResumptionSupport *srs = TLSSessionResumptionSupport::getInstance(ssl);
 
-  *copy = 0;
-  if (diags->tag_activated("ssl.session_cache")) {
-    char printable_buf[(len * 2) + 1];
-    sid.toString(printable_buf, sizeof(printable_buf));
-    Debug("ssl.session_cache.get", "ssl_get_cached_session cached session '%s' context %p", printable_buf, SSL_get_SSL_CTX(ssl));
+  ink_assert(srs);
+  if (srs) {
+    return srs->getSession(ssl, id, len, copy);
   }
 
-  APIHook *hook = ssl_hooks->get(TSSslHookInternalID(TS_SSL_SESSION_HOOK));
-  while (hook) {
-    hook->invoke(TS_EVENT_SSL_SESSION_GET, &sid);
-    hook = hook->m_link.next;
-  }
-
-  SSL_SESSION *session             = nullptr;
-  ssl_session_cache_exdata *exdata = nullptr;
-  if (session_cache->getSession(sid, &session, &exdata)) {
-    ink_assert(session);
-    ink_assert(exdata);
-
-    // Double check the timeout
-    if (ssl_session_timed_out(session)) {
-      SSL_INCREMENT_DYN_STAT(ssl_session_cache_miss);
-// Due to bug in openssl, the timeout is checked, but only removed
-// from the openssl built-in hash table.  The external remove cb is not called
-#if 0 // This is currently eliminated, since it breaks things in odd ways (see TS-3710)
-      ssl_rm_cached_session(SSL_get_SSL_CTX(ssl), session);
-#endif
-      session = nullptr;
-    } else {
-      SSLNetVConnection *netvc = SSLNetVCAccess(ssl);
-      SSL_INCREMENT_DYN_STAT(ssl_session_cache_hit);
-      netvc->setSSLSessionCacheHit(true);
-      netvc->setSSLCurveNID(exdata->curve);
-    }
-  } else {
-    SSL_INCREMENT_DYN_STAT(ssl_session_cache_miss);
-  }
-  return session;
+  return nullptr;
 }
 
 static int
@@ -910,13 +866,6 @@ SSLInitializeLibrary()
     CRYPTO_set_dynlock_lock_callback(ssl_dyn_lock_callback);
     CRYPTO_set_dynlock_destroy_callback(ssl_dyn_destroy_callback);
   }
-
-#ifdef TS_HAVE_OPENSSL_SESSION_TICKETS
-  ssl_session_ticket_index = SSL_CTX_get_ex_new_index(0, nullptr, nullptr, nullptr, ssl_session_ticket_free);
-  if (ssl_session_ticket_index == -1) {
-    SSLError("failed to create session ticket index");
-  }
-#endif
 
 #if TS_USE_TLS_OCSP
   ssl_stapling_ex_init();
