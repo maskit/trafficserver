@@ -107,6 +107,7 @@ struct MIMEField {
   uint8_t m_n_v_raw_printable_pad : 3;  // 3/8
   uint8_t m_readiness             : 2;  // 2/8
   uint8_t m_flags                 : 2;  // 2/8
+  bool m_sensitivity;
 
   bool
   is_dup_head() const
@@ -130,6 +131,12 @@ struct MIMEField {
   is_detached() const
   {
     return (m_readiness == MIME_FIELD_SLOT_READINESS_DETACHED);
+  }
+
+  bool
+  is_sensitive() const
+  {
+    return m_sensitivity;
   }
 
   bool
@@ -184,6 +191,8 @@ struct MIMEField {
                     const char separator = ',');
   bool value_is_valid(uint32_t invalid_char_bits = is_control_BIT) const;
   int has_dups() const;
+
+  void sensitivity_set(bool sensitive);
 };
 
 struct MIMEFieldBlockImpl : public HdrHeapObjImpl {
@@ -1099,6 +1108,12 @@ inline int
 MIMEField::has_dups() const
 {
   return (m_next_dup != nullptr);
+}
+
+inline void
+MIMEField::sensitivity_set(bool sensitive)
+{
+  m_sensitivity = sensitive;
 }
 
 /***********************************************************************
