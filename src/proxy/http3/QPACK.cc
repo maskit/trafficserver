@@ -356,8 +356,7 @@ QPACK::_encode_header(const MIMEField &field, uint16_t base_index, IOBufferBlock
   int value_len;
   const char *value = field.value_get(&value_len);
 
-  // TODO Set never_index flag on/off according to encoding headers
-  bool never_index = false;
+  bool never_index = field.is_sensitive();
 
   // Find from tables, and insert / duplicate a entry prior to encode it
   LookupResult lookup_result_static;
@@ -1243,9 +1242,9 @@ QPACK::_calc_postbase_index_from_absolute_index(uint16_t base_index, uint16_t ab
 void
 QPACK::_attach_header(HTTPHdr &hdr, const char *name, int name_len, const char *value, int value_len, bool never_index)
 {
-  // TODO If never_index is true, we need to mark this header as sensitive to not index the header when passing it to the other side
   MIMEField *new_field = hdr.field_create(name, name_len);
   new_field->value_set(hdr.m_heap, hdr.m_mime, value, value_len);
+  new_field->sensitivity_set(never_index);
   hdr.field_attach(new_field);
 }
 

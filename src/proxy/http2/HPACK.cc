@@ -929,6 +929,9 @@ hpack_decode_header_block(HpackIndexingTable &indexing_table, HTTPHdr *hdr, cons
         has_http2_violation = true;
         read_bytes          = -read_bytes;
       }
+      if (ftype == HpackField::NEVERINDEX_LITERAL) {
+        field->sensitivity_set(true);
+      }
       cursor               += read_bytes;
       header_field_started  = true;
       break;
@@ -1004,10 +1007,12 @@ hpack_encode_header_block(HpackIndexingTable &indexing_table, uint8_t *out_buf, 
     std::string_view value = field.value_get();
 
     // Choose field representation (See RFC7541 7.1.3)
+    // - Header fields with sensitive flag on should not be indexed
     // - Authorization header obviously should not be indexed
     // - Short Cookie header should not be indexed because of low entropy
     HpackField field_type;
-    if ((value.size() < 20 && match(name.data(), name.length(), HPACK_HDR_FIELD_COOKIE.data(), HPACK_HDR_FIELD_COOKIE.length())) ||
+    if (field.is_sensitive() ||
+        (value.size() < 20 && match(name.data(), name.length(), HPACK_HDR_FIELD_COOKIE.data(), HPACK_HDR_FIELD_COOKIE.length())) ||
         match(name.data(), name.length(), HPACK_HDR_FIELD_AUTHORIZATION.data(), HPACK_HDR_FIELD_AUTHORIZATION.length())) {
       field_type = HpackField::NEVERINDEX_LITERAL;
     } else {
