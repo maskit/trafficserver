@@ -59,6 +59,7 @@ public:
 
 protected:
   virtual void _fire_ssl_servername_event() = 0;
+  virtual uint16_t _get_local_port()        = 0;
 
   void _clear();
 

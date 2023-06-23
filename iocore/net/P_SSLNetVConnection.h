@@ -408,7 +408,9 @@ protected:
     return local_addr;
   }
 
+  // TLSSNISupport
   void _fire_ssl_servername_event() override;
+  uint16_t _get_local_port() override;
 
   bool _isTryingRenegotiation() const override;
   shared_SSL_CTX _lookupContextByName(const std::string &servername, SSLCertContextType ctxType) override;

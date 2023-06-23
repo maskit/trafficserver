@@ -745,6 +745,12 @@ QUICNetVConnection::_fire_ssl_servername_event()
 {
 }
 
+uint16_t
+SSLNetVConnection::_get_local_port()
+{
+  return this->get_local_port();
+}
+
 const IpEndpoint &
 QUICNetVConnection::_getLocalEndpoint()
 {

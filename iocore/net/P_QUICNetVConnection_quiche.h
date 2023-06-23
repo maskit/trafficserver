@@ -155,6 +155,7 @@ protected:
 
   // TLSSNISupport
   void _fire_ssl_servername_event() override;
+  uint16_t _get_local_port() override;
 
   // TLSSessionResumptionSupport
   const IpEndpoint &_getLocalEndpoint() override;

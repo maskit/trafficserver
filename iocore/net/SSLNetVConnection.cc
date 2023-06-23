@@ -1966,6 +1966,12 @@ SSLNetVConnection::_fire_ssl_servername_event()
   this->callHooks(TS_EVENT_SSL_SERVERNAME);
 }
 
+uint16_t
+SSLNetVConnection::_get_local_port()
+{
+  return this->get_local_port();
+}
+
 bool
 SSLNetVConnection::_isTryingRenegotiation() const
 {
