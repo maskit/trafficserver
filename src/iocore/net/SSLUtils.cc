@@ -460,13 +460,6 @@ ssl_servername_callback(SSL *ssl, int *al, void *arg)
   TLSSNISupport *snis = TLSSNISupport::getInstance(ssl);
   if (snis) {
     snis->on_servername(ssl, al, arg);
-#if !TS_USE_HELLO_CB
-    // Only call the SNI actions here if not already performed in the HELLO_CB
-    int ret = snis->perform_sni_action(*ssl);
-    if (ret != SSL_TLSEXT_ERR_OK) {
-      return SSL_TLSEXT_ERR_ALERT_FATAL;
-    }
-#endif
   } else {
     // This error suggests either of these:
     // 1) Call back on unsupported netvc -- Don't register callback unnecessarily

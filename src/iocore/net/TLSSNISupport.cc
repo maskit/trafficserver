@@ -87,7 +87,6 @@ TLSSNISupport::perform_sni_action(SSL &ssl)
   return SSL_TLSEXT_ERR_OK;
 }
 
-#if TS_USE_HELLO_CB
 void
 #if HAVE_SSL_CTX_SET_CLIENT_HELLO_CB
 TLSSNISupport::on_client_hello(SSL *ssl, int * /* al ATS_UNUSED */, void * /* arg ATS_UNUSED */)
@@ -132,7 +131,6 @@ TLSSNISupport::on_client_hello(const SSL_CLIENT_HELLO *client_hello)
     this->_set_sni_server_name(std::string_view(servername, len));
   }
 }
-#endif
 
 void
 TLSSNISupport::on_servername(SSL *ssl, int * /* al ATS_UNUSED */, void * /* arg ATS_UNUSED */)
