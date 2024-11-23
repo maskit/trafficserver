@@ -195,6 +195,14 @@ ChunkedHandler::read_size()
         }
       } else if (state == CHUNK_READ_SIZE_CRLF) { // Scan for a linefeed
         if (ParseRules::is_lf(*tmp)) {
+          if (!ParseRules::is_cr(*(tmp - 1))) {
+            if (true) {
+              Dbg(dbg_ctl_http_chunk, "Found an LF without a preceding CR (protocol violation)");
+              state = CHUNK_READ_ERROR;
+              done  = true;
+              break;
+            }
+          }
           Dbg(dbg_ctl_http_chunk, "read chunk size of %d bytes", running_sum);
           cur_chunk_bytes_left = (cur_chunk_size = running_sum);
           state                = (running_sum == 0) ? CHUNK_READ_TRAILER_BLANK : CHUNK_READ_CHUNK;
@@ -212,8 +220,7 @@ ChunkedHandler::read_size()
       } else if (state == CHUNK_READ_SIZE_START) {
         if (ParseRules::is_cr(*tmp)) {
           // Skip it
-        } else if (ParseRules::is_lf(*tmp) &&
-                   bytes_used <= 2) { // bytes_used should be 2 if it's CRLF, but permit a single LF as well
+        } else if (ParseRules::is_lf(*tmp) && bytes_used == 2) { // bytes_used should be 2 if it's CRLF
           running_sum = 0;
           num_digits  = 0;
           state       = CHUNK_READ_SIZE;
