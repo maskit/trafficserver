@@ -60,27 +60,28 @@ int const CHUNK_IOBUFFER_SIZE_INDEX = MIN_IOBUFFER_SIZE;
 ChunkedHandler::ChunkedHandler() : max_chunk_size(DEFAULT_MAX_CHUNK_SIZE) {}
 
 void
-ChunkedHandler::init(IOBufferReader *buffer_in, HttpTunnelProducer *p, bool drop_chunked_trailers)
+ChunkedHandler::init(IOBufferReader *buffer_in, HttpTunnelProducer *p, bool drop_chunked_trailers, bool parse_chunk_strictly)
 {
   if (p->do_chunking) {
-    init_by_action(buffer_in, ACTION_DOCHUNK, drop_chunked_trailers);
+    init_by_action(buffer_in, ACTION_DOCHUNK, drop_chunked_trailers, parse_chunk_strictly);
   } else if (p->do_dechunking) {
-    init_by_action(buffer_in, ACTION_DECHUNK, drop_chunked_trailers);
+    init_by_action(buffer_in, ACTION_DECHUNK, drop_chunked_trailers, parse_chunk_strictly);
   } else {
-    init_by_action(buffer_in, ACTION_PASSTHRU, drop_chunked_trailers);
+    init_by_action(buffer_in, ACTION_PASSTHRU, drop_chunked_trailers, parse_chunk_strictly);
   }
   return;
 }
 
 void
-ChunkedHandler::init_by_action(IOBufferReader *buffer_in, Action action, bool drop_chunked_trailers)
+ChunkedHandler::init_by_action(IOBufferReader *buffer_in, Action action, bool drop_chunked_trailers, bool parse_chunk_strictly)
 {
-  running_sum          = 0;
-  num_digits           = 0;
-  cur_chunk_size       = 0;
-  cur_chunk_bytes_left = 0;
-  truncation           = false;
-  this->action         = action;
+  running_sum                = 0;
+  num_digits                 = 0;
+  cur_chunk_size             = 0;
+  cur_chunk_bytes_left       = 0;
+  truncation                 = false;
+  this->action               = action;
+  this->strict_chunk_parsing = parse_chunk_strictly;
 
   switch (action) {
   case ACTION_DOCHUNK:
@@ -196,8 +197,8 @@ ChunkedHandler::read_size()
       } else if (state == CHUNK_READ_SIZE_CRLF) { // Scan for a linefeed
         if (ParseRules::is_lf(*tmp)) {
           if (!ParseRules::is_cr(*(tmp - 1))) {
-            if (true) {
-              Dbg(dbg_ctl_http_chunk, "Found an LF without a preceding CR (protocol violation)");
+            Dbg(dbg_ctl_http_chunk, "Found an LF without a preceding CR (protocol violation)");
+            if (strict_chunk_parsing) {
               state = CHUNK_READ_ERROR;
               done  = true;
               break;
@@ -657,9 +658,10 @@ HttpTunnel::deallocate_buffers()
 
 void
 HttpTunnel::set_producer_chunking_action(HttpTunnelProducer *p, int64_t skip_bytes, TunnelChunkingAction_t action,
-                                         bool drop_chunked_trailers)
+                                         bool drop_chunked_trailers, bool parse_chunk_strictly)
 {
   this->http_drop_chunked_trailers = drop_chunked_trailers;
+  this->http_strict_chunk_parsing  = parse_chunk_strictly;
   p->chunked_handler.skip_bytes    = skip_bytes;
   p->chunking_action               = action;
 
@@ -876,7 +878,7 @@ HttpTunnel::producer_run(HttpTunnelProducer *p)
   IOBufferReader *dechunked_buffer_start   = nullptr;
   IOBufferReader *passthrough_buffer_start = nullptr;
   if (p->do_chunking || p->do_dechunking || p->do_chunked_passthru) {
-    p->chunked_handler.init(p->buffer_start, p, this->http_drop_chunked_trailers);
+    p->chunked_handler.init(p->buffer_start, p, this->http_drop_chunked_trailers, this->http_strict_chunk_parsing);
 
     // Copy the header into the chunked/dechunked buffers.
     if (p->do_chunking) {

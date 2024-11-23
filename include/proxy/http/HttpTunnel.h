@@ -111,6 +111,8 @@ struct ChunkedHandler {
    */
   bool drop_chunked_trailers = false;
 
+  bool strict_chunk_parsing = true;
+
   bool    truncation = false;
   int64_t skip_bytes = 0;
 
@@ -136,8 +138,8 @@ struct ChunkedHandler {
   //@}
   ChunkedHandler();
 
-  void init(IOBufferReader *buffer_in, HttpTunnelProducer *p, bool drop_chunked_trailers);
-  void init_by_action(IOBufferReader *buffer_in, Action action, bool drop_chunked_trailers);
+  void init(IOBufferReader *buffer_in, HttpTunnelProducer *p, bool drop_chunked_trailers, bool strict_parsing);
+  void init_by_action(IOBufferReader *buffer_in, Action action, bool drop_chunked_trailers, bool strict_parsing);
   void clear();
 
   /// Set the max chunk @a size.
@@ -297,6 +299,7 @@ public:
 
   /// A named variable for the @a drop_chunked_trailers parameter to @a set_producer_chunking_action.
   static constexpr bool DROP_CHUNKED_TRAILERS = true;
+  static constexpr bool PARSE_CHUNK_STRICTLY  = true;
 
   /** Configure how the producer should behave with chunked content.
    * @param[in] p Producer to configure.
@@ -305,9 +308,10 @@ public:
    * @param[in] drop_chunked_trailers If @c true, chunked trailers are filtered
    *   out. Logically speaking, this is only applicable when proxying chunked
    *   content, thus only when @a action is @c TCA_PASSTHRU_CHUNKED_CONTENT.
+   * @param[in] parse_chunk_strictly If @c true, no parse error will be allowed
    */
   void set_producer_chunking_action(HttpTunnelProducer *p, int64_t skip_bytes, TunnelChunkingAction_t action,
-                                    bool drop_chunked_trailers);
+                                    bool drop_chunked_trailers, bool parse_chunk_strictly);
   /// Set the maximum (preferred) chunk @a size of chunked output for @a producer.
   void set_producer_chunking_size(HttpTunnelProducer *producer, int64_t size);
 
@@ -385,6 +389,9 @@ private:
 
   /// Corresponds to proxy.config.http.drop_chunked_trailers having a value of 1.
   bool http_drop_chunked_trailers = false;
+
+  /// Corresponds to proxy.config.http.strict_chunk_parsing having a value of 1.
+  bool http_strict_chunk_parsing = false;
 };
 
 ////
