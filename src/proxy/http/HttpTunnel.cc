@@ -222,7 +222,7 @@ ChunkedHandler::read_size()
         if (ParseRules::is_cr(*tmp)) {
           // Skip it
         } else if (ParseRules::is_lf(*tmp) &&
-                   (bytes_used == 2 || !strict_chunk_parsing && bytes_used <= 2)) { // bytes_used should be 2 if it's CRLF
+                   (bytes_used == 2 || (!strict_chunk_parsing && bytes_used <= 2))) { // bytes_used should be 2 if it's CRLF
           running_sum = 0;
           num_digits  = 0;
           state       = CHUNK_READ_SIZE;
