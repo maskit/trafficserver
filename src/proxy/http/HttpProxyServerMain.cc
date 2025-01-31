@@ -22,28 +22,25 @@
  */
 
 #include "api/LifecycleAPIHooks.h"
+#include "iocore/net/UDPNet.h"
 #include "tscore/ink_config.h"
-#include "../../iocore/net/P_Net.h"
-#include "proxy/http/HttpConfig.h"
-#include "proxy/http/HttpSessionAccept.h"
+#include "../../iocore/net/P_SSLNextProtocolAccept.h"
+#include "proxy/ProtocolProbeSessionAccept.h"
 #include "proxy/ReverseProxy.h"
+#include "proxy/http/HttpConfig.h"
+#include "proxy/http/HttpProxyServerMain.h"
+#include "proxy/http/HttpSessionAccept.h"
 #include "proxy/http/HttpSessionManager.h"
+#include "proxy/http/PreWarmManager.h"
+#include "proxy/http2/Http2SessionAccept.h"
 #ifdef USE_HTTP_DEBUG_LISTS
 #include "proxy/http/Http1ClientSession.h"
 #endif
-#include "proxy/http/HttpTunnel.h"
-#include "tscore/Tokenizer.h"
-#include "iocore/net/ConnectionTracker.h"
-#include "../../iocore/net/P_SSLNextProtocolAccept.h"
-#include "proxy/ProtocolProbeSessionAccept.h"
-#include "proxy/http2/Http2SessionAccept.h"
-#include "proxy/http/HttpProxyServerMain.h"
 #if TS_USE_QUIC == 1
 #include "../../iocore/net/P_QUICNetProcessor.h"
 #include "../../iocore/net/P_QUICNextProtocolAccept.h"
 #include "proxy/http3/Http3SessionAccept.h"
 #endif
-#include "proxy/http/PreWarmManager.h"
 
 #include <vector>
 
@@ -66,10 +63,10 @@ bool                    et_udp_threads_ready = false;
 
 // File / process scope initializations
 static bool HTTP_SERVER_INITIALIZED __attribute__((unused)) = []() -> bool {
-  swoc::bwf::Global_Names.assign("ts-thread", [](swoc::BufferWriter &w, swoc::bwf::Spec const &spec) -> swoc::BufferWriter & {
+  swoc::bwf::Global_Names().assign("ts-thread", [](swoc::BufferWriter &w, swoc::bwf::Spec const &spec) -> swoc::BufferWriter & {
     return bwformat(w, spec, this_thread());
   });
-  swoc::bwf::Global_Names.assign("ts-ethread", [](swoc::BufferWriter &w, swoc::bwf::Spec const &spec) -> swoc::BufferWriter & {
+  swoc::bwf::Global_Names().assign("ts-ethread", [](swoc::BufferWriter &w, swoc::bwf::Spec const &spec) -> swoc::BufferWriter & {
     return bwformat(w, spec, this_ethread());
   });
   return true;

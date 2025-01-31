@@ -75,6 +75,9 @@
 #include "../iocore/eventsystem/P_EventSystem.h"
 #include "../iocore/net/P_Net.h"
 #include "tscore/Regression.h"
+#if TS_HAS_TESTS
+#include "../iocore/net/P_NetVCTest.h"
+#endif
 
 #define PVC_LOCK_RETRY_TIME      HRTIME_MSECONDS(10)
 #define MIN_BLOCK_TRANSFER_BYTES 128
@@ -483,7 +486,7 @@ PluginVC::process_write_side()
   need_write_process = false;
 
   // Check write_state
-  if (write_state.vio.op != VIO::WRITE || closed || write_state.shutdown) {
+  if (write_state.vio.cont == nullptr || write_state.vio.op != VIO::WRITE || closed || write_state.shutdown) {
     return;
   }
 
@@ -493,9 +496,13 @@ PluginVC::process_write_side()
     return;
   }
 
-  IOBufferReader *reader      = write_state.vio.get_reader();
-  int64_t         bytes_avail = reader->read_avail();
-  int64_t         act_on      = std::min(bytes_avail, ntodo);
+  IOBufferReader *reader = write_state.vio.get_reader();
+  if (reader == nullptr) {
+    return;
+  }
+
+  int64_t bytes_avail = reader->read_avail();
+  int64_t act_on      = std::min(bytes_avail, ntodo);
 
   Dbg(dbg_ctl_pvc, "[%u] %s: process_write_side; act_on %" PRId64 "", core_obj->id, PVC_TYPE, act_on);
 
@@ -601,7 +608,8 @@ PluginVC::process_read_side()
   need_read_process = false;
 
   // Check read_state
-  if (read_state.vio.op != VIO::READ || closed || read_state.shutdown || !read_state.vio.ntodo()) {
+  if (read_state.vio.cont == nullptr || read_state.vio.op != VIO::READ || closed || read_state.shutdown ||
+      !read_state.vio.ntodo()) {
     return;
   }
 
@@ -917,7 +925,7 @@ PluginVC::set_mptcp_state()
 }
 
 int
-PluginVC::set_tcp_congestion_control(int ATS_UNUSED)
+PluginVC::set_tcp_congestion_control(tcp_congestion_control_side ATS_UNUSED)
 {
   return -1;
 }

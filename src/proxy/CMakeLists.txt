@@ -39,13 +39,9 @@ add_library(
 )
 add_library(ts::proxy ALIAS proxy)
 
-if(BUILD_REGRESSION_TESTING)
-  target_sources(proxy PRIVATE RegressionSM.cc)
-endif()
-
 target_link_libraries(
   proxy
-  PUBLIC ts::inkcache ts::inkevent ts::tsutil ts::tscore
+  PUBLIC ts::inkcache ts::inkevent ts::tsutil ts::tscore ts::inknet
   PRIVATE ts::rpcpublichandlers ts::jsonrpc_protocol ts::inkutils ts::tsapibackend
 )
 

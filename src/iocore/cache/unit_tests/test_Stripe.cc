@@ -24,7 +24,7 @@
 #include "main.h"
 #include "test_doubles.h"
 
-#include "tscore/EventNotify.h"
+#include "../P_CacheInternal.h"
 
 #include <array>
 #include <cstdint>
@@ -119,10 +119,10 @@ static std::FILE *
 init_stripe_for_writing(StripeSM &stripe, StripteHeaderFooter &header, CacheVol &cache_vol)
 {
   stripe.cache_vol                             = &cache_vol;
-  cache_rsb.write_bytes                        = Metrics::Counter::createPtr("unit_test.write.bytes");
-  stripe.cache_vol->vol_rsb.write_bytes        = Metrics::Counter::createPtr("unit_test.write.bytes");
-  cache_rsb.gc_frags_evacuated                 = Metrics::Counter::createPtr("unit_test.gc.frags.evacuated");
-  stripe.cache_vol->vol_rsb.gc_frags_evacuated = Metrics::Counter::createPtr("unit_test.gc.frags.evacuated");
+  cache_rsb.write_bytes                        = ts::Metrics::Counter::createPtr("unit_test.write.bytes");
+  stripe.cache_vol->vol_rsb.write_bytes        = ts::Metrics::Counter::createPtr("unit_test.write.bytes");
+  cache_rsb.gc_frags_evacuated                 = ts::Metrics::Counter::createPtr("unit_test.gc.frags.evacuated");
+  stripe.cache_vol->vol_rsb.gc_frags_evacuated = ts::Metrics::Counter::createPtr("unit_test.gc.frags.evacuated");
 
   stripe.sector_size = 256;
 
@@ -130,10 +130,10 @@ init_stripe_for_writing(StripeSM &stripe, StripteHeaderFooter &header, CacheVol 
   // based on the distance of the write_pos from this point. If we ever move
   // the write head before the start of the stripe data section, we will
   // underflow offset calculations and end up in big trouble.
-  header.write_pos = stripe.start;
-  header.agg_pos   = 1;
-  header.phase     = 0;
-  stripe.header    = &header;
+  header.write_pos        = stripe.start;
+  header.agg_pos          = 1;
+  header.phase            = 0;
+  stripe.directory.header = &header;
   return attach_tmpfile_to_stripe(stripe);
 }
 
@@ -192,7 +192,7 @@ TEST_CASE("The behavior of StripeSM::add_writer.")
     }
   }
 
-  ats_free(stripe.raw_dir);
+  ats_free(stripe.directory.raw_dir);
 }
 
 // This test case demonstrates how to set up a StripeSM and make
@@ -302,7 +302,7 @@ TEST_CASE("aggWrite behavior with f.evacuator unset")
     cache_config_enable_checksum = false;
   }
 
-  ats_free(stripe.raw_dir);
+  ats_free(stripe.directory.raw_dir);
 }
 
 // When f.evacuator is set, vc.buf must contain a Doc object including headers
@@ -400,5 +400,5 @@ TEST_CASE("aggWrite behavior with f.evacuator set")
   }
 
   delete[] source;
-  ats_free(stripe.raw_dir);
+  ats_free(stripe.directory.raw_dir);
 }
