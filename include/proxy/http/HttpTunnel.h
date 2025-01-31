@@ -122,8 +122,10 @@ struct ChunkedHandler {
   int          last_server_event    = VC_EVENT_NONE;
 
   // Chunked header size parsing info.
-  int running_sum = 0;
-  int num_digits  = 0;
+  int  running_sum = 0;
+  int  num_digits  = 0;
+  int  num_cr      = 0;
+  bool prev_is_cr  = false;
 
   /// @name Output data.
   //@{

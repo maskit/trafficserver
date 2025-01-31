@@ -149,7 +149,6 @@ ChunkedHandler::read_size()
 {
   int64_t bytes_used;
   bool    done = false;
-  int     cr   = 0;
 
   while (chunked_reader->read_avail() > 0 && !done) {
     const char *tmp       = chunked_reader->start();
@@ -188,15 +187,15 @@ ChunkedHandler::read_size()
             done  = true;
             break;
           } else {
-            if (ParseRules::is_cr(*tmp)) {
-              ++cr;
+            if ((prev_is_cr = ParseRules::is_cr(*tmp)) == true) {
+              ++num_cr;
             }
             state = CHUNK_READ_SIZE_CRLF; // now look for CRLF
           }
         }
       } else if (state == CHUNK_READ_SIZE_CRLF) { // Scan for a linefeed
         if (ParseRules::is_lf(*tmp)) {
-          if (!ParseRules::is_cr(*(tmp - 1))) {
+          if (!prev_is_cr) {
             Dbg(dbg_ctl_http_chunk, "Found an LF without a preceding CR (protocol violation)");
             if (strict_chunk_parsing) {
               state = CHUNK_READ_ERROR;
@@ -208,15 +207,15 @@ ChunkedHandler::read_size()
           cur_chunk_bytes_left = (cur_chunk_size = running_sum);
           state                = (running_sum == 0) ? CHUNK_READ_TRAILER_BLANK : CHUNK_READ_CHUNK;
           done                 = true;
-          cr                   = 0;
+          num_cr               = 0;
           break;
-        } else if (ParseRules::is_cr(*tmp)) {
-          if (cr != 0) {
+        } else if ((prev_is_cr = ParseRules::is_cr(*tmp)) == true) {
+          if (num_cr != 0) {
             state = CHUNK_READ_ERROR;
             done  = true;
             break;
           }
-          ++cr;
+          ++num_cr;
         }
       } else if (state == CHUNK_READ_SIZE_START) {
         if (ParseRules::is_cr(*tmp)) {
@@ -225,6 +224,7 @@ ChunkedHandler::read_size()
                    (bytes_used == 2 || (!strict_chunk_parsing && bytes_used <= 2))) { // bytes_used should be 2 if it's CRLF
           running_sum = 0;
           num_digits  = 0;
+          num_cr      = 0;
           state       = CHUNK_READ_SIZE;
         } else { // Unexpected character
           state = CHUNK_READ_ERROR;
