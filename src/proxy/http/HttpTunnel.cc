@@ -218,14 +218,28 @@ ChunkedHandler::read_size()
           ++num_cr;
         }
       } else if (state == CHUNK_READ_SIZE_START) {
-        if (ParseRules::is_cr(*tmp)) {
-          // Skip it
-        } else if (ParseRules::is_lf(*tmp) &&
-                   (bytes_used == 2 || (!strict_chunk_parsing && bytes_used <= 2))) { // bytes_used should be 2 if it's CRLF
+        Dbg(dbg_ctl_http_chunk, "CHUNK_READ_SIZE_START 0x%02x", *tmp);
+        if (ParseRules::is_lf(*tmp)) {
+          if (!prev_is_cr) {
+            Dbg(dbg_ctl_http_chunk, "Found an LF without a preceding CR (protocol violation) before chunk size");
+            if (strict_chunk_parsing) {
+              state = CHUNK_READ_ERROR;
+              done  = true;
+              break;
+            }
+          }
           running_sum = 0;
           num_digits  = 0;
           num_cr      = 0;
           state       = CHUNK_READ_SIZE;
+        } else if ((prev_is_cr = ParseRules::is_cr(*tmp)) == true) {
+          if (num_cr != 0) {
+            Dbg(dbg_ctl_http_chunk, "Found multiple CRs before chunk size");
+            state = CHUNK_READ_ERROR;
+            done  = true;
+            break;
+          }
+          ++num_cr;
         } else { // Unexpected character
           state = CHUNK_READ_ERROR;
           done  = true;
