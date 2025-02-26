@@ -1126,7 +1126,7 @@ HttpConfig::reconfigure()
   params->oride.chunking_enabled            = INT_TO_BOOL(m_master.oride.chunking_enabled);
   params->oride.http_drop_chunked_trailers  = m_master.oride.http_drop_chunked_trailers;
   params->oride.http_strict_chunk_parsing   = m_master.oride.http_strict_chunk_parsing;
-  params->oride.auth_server_session_private = INT_TO_BOOL(m_master.oride.auth_server_session_private);
+  params->oride.auth_server_session_private = m_master.oride.auth_server_session_private;
 
   params->oride.http_chunking_size = m_master.oride.http_chunking_size;
 
